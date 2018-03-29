@@ -3,7 +3,12 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
 VisualStudioVersion = 15.0.27520.0
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BlogAzureFunctions", "BlogAzureFunctions\BlogAzureFunctions.csproj", "{D71CC922-08B2-4C1A-B0D1-4AEF57E54765}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "BlogAzureFunctions", "BlogAzureFunctions\BlogAzureFunctions.csproj", "{D71CC922-08B2-4C1A-B0D1-4AEF57E54765}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{464BAC08-68A7-40BA-91F0-856239A43789}"
+	ProjectSection(SolutionItems) = preProject
+		.gitignore = .gitignore
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

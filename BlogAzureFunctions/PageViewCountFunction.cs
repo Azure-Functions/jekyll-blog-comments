@@ -1,11 +1,8 @@
 using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Extensions.Http;
 using Microsoft.Azure.WebJobs.Host;
-using Microsoft.WindowsAzure.Storage;
 using Microsoft.WindowsAzure.Storage.Table;
 using System;
-using System.Configuration;
-using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Threading.Tasks;
@@ -31,18 +28,16 @@ namespace BlogAzureFunctions
         {
             log.Info("PageView received a request.");
 
-            var page = req.GetQueryNameValuePairs().Where(kv => kv.Key == "page").Select(kv => kv.Value).FirstOrDefault();
+            var page = req.GetQueryParameterValue("page");
             if (String.IsNullOrEmpty(page))
             {
                 log.Error("'page' parameter missing.");
                 return req.CreateErrorResponse(HttpStatusCode.BadRequest, "'page' parameter missing.");
             }
 
-            var cloudService = CloudStorageAccount.Parse(ConfigurationManager.AppSettings["DamienGTableStorage"]);
-            var table = cloudService.CreateCloudTableClient().GetTableReference("PageViewCounts");
+            var table = Helpers.GetTableReference("PageViewCounts");
 
-            var retrievedResult = await table.ExecuteAsync(TableOperation.Retrieve<PageViewCount>("damieng.com", page));
-            var pageView = (PageViewCount)retrievedResult.Result;
+            var pageView = await table.RetrieveAsync<PageViewCount>("damieng.com", page);
             if (pageView == null)
             {
                 pageView = new PageViewCount(page) { ViewCount = 1 };
