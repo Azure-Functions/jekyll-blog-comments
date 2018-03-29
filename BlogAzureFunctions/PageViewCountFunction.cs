@@ -29,7 +29,7 @@ namespace BlogAzureFunctions
         [FunctionName("PageView")]
         public static async Task<HttpResponseMessage> Run([HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = null)]HttpRequestMessage req, TraceWriter log)
         {
-            log.Info("PageView function received a request.");
+            log.Info("PageView received a request.");
 
             var page = req.GetQueryNameValuePairs().Where(kv => kv.Key == "page").Select(kv => kv.Value).FirstOrDefault();
             if (String.IsNullOrEmpty(page))
@@ -46,13 +46,17 @@ namespace BlogAzureFunctions
             if (pageView == null)
             {
                 pageView = new PageViewCount(page) { ViewCount = 1 };
+                log.Info($"PageView initializing count for page '{page}' to 1");
                 await table.ExecuteAsync(TableOperation.Insert(pageView));
             }
             else
             {
                 pageView.ViewCount++;
+                log.Info($"PageView incrementing count for page '{page}' to {pageView.ViewCount}");
                 await table.ExecuteAsync(TableOperation.Replace(pageView));
             }
+
+            log.Info($"PageView complete for '{page}'");
 
             return req.CreateResponse(HttpStatusCode.OK, new
             {
