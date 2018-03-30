@@ -24,41 +24,23 @@ namespace BlogAzureFunctions
     public static class PageViewCountFunction
     {
         [FunctionName("PageView")]
-        public static async Task<HttpResponseMessage> Run([HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = null)]HttpRequestMessage req, TraceWriter log)
+        public static async Task<HttpResponseMessage> Run([HttpTrigger(AuthorizationLevel.Anonymous, "get")]HttpRequestMessage req, TraceWriter log)
         {
-            log.Info("PageView received a request.");
-
             var page = req.GetQueryParameterValue("page");
             if (String.IsNullOrEmpty(page))
-            {
-                log.Error("'page' parameter missing.");
                 return req.CreateErrorResponse(HttpStatusCode.BadRequest, "'page' parameter missing.");
-            }
 
             var table = Helpers.GetTableReference("PageViewCounts");
 
-            var pageView = await table.RetrieveAsync<PageViewCount>("damieng.com", page);
-            if (pageView == null)
-            {
-                pageView = new PageViewCount(page) { ViewCount = 1 };
-                log.Info($"PageView initializing count for page '{page}' to 1");
-                await table.ExecuteAsync(TableOperation.Insert(pageView));
-            }
-            else
-            {
-                pageView.ViewCount++;
-                log.Info($"PageView incrementing count for page '{page}' to {pageView.ViewCount}");
-                await table.ExecuteAsync(TableOperation.Replace(pageView));
-            }
+            var pageView = await table.RetrieveAsync<PageViewCount>("damieng.com", page) ?? new PageViewCount(page) { ViewCount = 0 };
+            var operation = pageView.ViewCount == 0
+                ? TableOperation.Insert(pageView)
+                : TableOperation.Replace(pageView);
 
-            log.Info($"PageView complete for '{page}'");
+            pageView.ViewCount++;
+            await table.ExecuteAsync(operation);
 
-            return req.CreateResponse(HttpStatusCode.OK, new
-            {
-                page,
-                viewCount = pageView.ViewCount
-            });
+            return req.CreateResponse(HttpStatusCode.OK, new { viewCount = pageView.ViewCount });
         }
     }
 }
-
