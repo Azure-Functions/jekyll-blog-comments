@@ -1,9 +1,7 @@
 ﻿using Microsoft.WindowsAzure.Storage;
 using Microsoft.WindowsAzure.Storage.Table;
 using System;
-using System.Collections.Generic;
 using System.Configuration;
-using System.Linq;
 using System.Net.Http;
 using System.Threading.Tasks;
 
@@ -14,12 +12,6 @@ namespace BlogAzureFunctions
         public static string GetQueryParameterValue(this HttpRequestMessage message, string name)
         {
             return message.RequestUri.ParseQueryString()[name];
-        }
-
-        public static async Task<Dictionary<string, string>> GetFormAsDictionary(this HttpRequestMessage message)
-        {
-            var formData = await message.Content.ReadAsFormDataAsync();
-            return formData.AllKeys.ToDictionary(k => k, k => formData[k]);
         }
 
         public static CloudStorageAccount GetCloudStorageAccount()
