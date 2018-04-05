@@ -20,7 +20,6 @@ namespace BlogAzureFunctions
     public static class PostCommentToPullRequestFunction
     {
         private static readonly Regex emailRegex = new Regex(@"^[^@\s]+@[^@\s]+\.[^@\s]+$");
-        private static readonly Regex pathValidChars = new Regex(@"");
 
         [FunctionName("PostComment")]
         public static async Task<HttpResponseMessage> Run([HttpTrigger(AuthorizationLevel.Anonymous, "post")]HttpRequestMessage request, TraceWriter log)
@@ -51,8 +50,6 @@ namespace BlogAzureFunctions
 
             if (!Uri.TryCreate(form["url"], UriKind.Absolute, out var parsedUrl))
                 errors.Add("Form 'url' is not the correct format");
-            else
-                form["url"] = parsedUrl.ToString();
 
             return errors.Count == 0;
         }
@@ -67,53 +64,76 @@ namespace BlogAzureFunctions
             var repo = await gh.Repository.Get(repoId[0], repoId[1]);
             var defaultBranch = await gh.Repository.Branch.Get(repo.Id, repo.DefaultBranch);
 
-            var commentId = CreateId(form);
-            var postId = pathValidChars.Replace(form["post_id"], "-");
-            var message = form["comment"];
+            var comment = Comment.BuildFromForm(form);
 
-            var newReference = new NewReference($"refs/heads/comment-{commentId}", defaultBranch.Commit.Sha);
+            var newReference = new NewReference($"refs/heads/comment-{comment.id}", defaultBranch.Commit.Sha);
             var newBranch = await gh.Git.Reference.Create(repo.Id, newReference);
 
             var committer = new Committer(form["author"], form["email"], DateTime.UtcNow);
-            var fileContents = CreateFileContents(commentId, committer.Name, committer.Email, form["url"], message);
-            var fileRequest = new CreateFileRequest($"Comment by {form["author"]} on {postId}", fileContents, newBranch.Ref);
+            var fileContents = CreateFileContents(comment);
+            var fileRequest = new CreateFileRequest($"Comment by {form["author"]} on {comment.post_id}", fileContents, newBranch.Ref);
             fileRequest.Committer = committer;
-            await gh.Repository.Content.CreateFile(repo.Id, $"_data/comments/{postId}/{commentId}.yml", fileRequest);
+            await gh.Repository.Content.CreateFile(repo.Id, $"_data/comments/{comment.post_id}/{comment.id}.yml", fileRequest);
 
-            var pullRequest = new NewPullRequest(fileRequest.Message, newBranch.Ref, defaultBranch.Name) { Body = message };
+            var pullRequest = new NewPullRequest(fileRequest.Message, newBranch.Ref, defaultBranch.Name) { Body = comment.message };
             return await gh.Repository.PullRequest.Create(repo.Id, pullRequest);
         }
 
-        private static string EncodeGravatar(string email)
-        {
-            using (var md5 = MD5.Create())
-                return BitConverter.ToString(md5.ComputeHash(Encoding.UTF8.GetBytes(email))).Replace("-", "").ToLower();
-        }
-
-        private static string CreateFileContents(int commentId, string author, string email, string url, string message)
+        private static string CreateFileContents(Comment comment)
         {
             var builder = new StringBuilder();
-            builder.AppendLine($"id: {commentId}");
-            builder.AppendLine($"name: {author}");
-            builder.AppendLine($"email: {email}");
-            builder.AppendLine($"gravatar: {EncodeGravatar(email)}");
-            if (url != null)
-                builder.AppendLine($"url: {url}");
-            builder.AppendLine($"date: {DateTime.Now:u}");
-            builder.AppendLine($"message: \"{message.Replace("\"", "\\\"")}, \"");
+            builder.AppendLine($"id: {comment.id}");
+            builder.AppendLine($"name: {comment.author}");
+            builder.AppendLine($"email: {comment.email}");
+            builder.AppendLine($"gravatar: {comment.gravatar}");
+            builder.AppendLine($"url: {comment.url}");
+            builder.AppendLine($"date: {comment.date:u}");
+            builder.AppendLine($"message: {comment.message}");
             return builder.ToString();
         }
 
-        private static int CreateId(NameValueCollection form)
+        class Comment
         {
-            unchecked
+            private static readonly Regex pathValidChars = new Regex(@"[^a-zA-Z-]");
+
+            public static Comment BuildFromForm(NameValueCollection form)
             {
-                var hash = 17;
-                hash = hash * form["post_id"].GetHashCode();
-                hash = hash * form["author"].GetHashCode();
-                hash = hash * form["comment"].GetHashCode();
-                hash = hash * DateTime.Now.GetHashCode();
-                return hash;
+                return new Comment(
+                    pathValidChars.Replace(form["post_id"], "-"),
+                    form["comment"],
+                    form["author"],
+                    form["email"],
+                    DateTime.UtcNow,
+                    Uri.TryCreate(form["url"], UriKind.Absolute, out var parsedUrl) ? parsedUrl : null);
+            }
+
+            public Comment(string post_id, string message, string author, string email, DateTime date,
+                Uri url = null, int? id = null, string gravatar = null)
+            {
+                this.post_id = post_id;
+                this.message = message;
+                this.author = author;
+                this.email = email;
+                this.date = date;
+                this.url = url;
+
+                this.id = id ?? new { post_id, author, message, date }.GetHashCode();
+                this.gravatar = gravatar ?? EncodeGravatar(email);
+            }
+
+            public int id { get; }
+            public string post_id { get; }
+            public string message { get; }
+            public string author { get; }
+            public string email { get; }
+            public Uri url { get; }
+            public string gravatar { get; }
+            public DateTime date { get; }
+
+            private static string EncodeGravatar(string email)
+            {
+                using (var md5 = MD5.Create())
+                    return BitConverter.ToString(md5.ComputeHash(Encoding.UTF8.GetBytes(email))).Replace("-", "").ToLower();
             }
         }
     }
