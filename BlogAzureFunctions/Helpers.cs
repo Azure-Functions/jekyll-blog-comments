@@ -1,10 +1,11 @@
-﻿using System.Collections.Generic;
+﻿using Microsoft.WindowsAzure.Storage;
+using Microsoft.WindowsAzure.Storage.Table;
+using System;
+using System.Collections.Generic;
 using System.Configuration;
 using System.Linq;
 using System.Net.Http;
 using System.Threading.Tasks;
-using Microsoft.WindowsAzure.Storage;
-using Microsoft.WindowsAzure.Storage.Table;
 
 namespace BlogAzureFunctions
 {
@@ -32,11 +33,19 @@ namespace BlogAzureFunctions
             return GetCloudStorageAccount().CreateCloudTableClient().GetTableReference(name);
         }
 
-        public static async Task<T> RetrieveAsync<T>(this CloudTable cloudTable, string partitionKey, string rowKey) where T:TableEntity
+        public static async Task<T> RetrieveAsync<T>(this CloudTable cloudTable, string partitionKey, string rowKey) where T : TableEntity
         {
             var tableResult = await cloudTable.ExecuteAsync(TableOperation.Retrieve<T>(partitionKey, rowKey));
             return (T)tableResult.Result;
         }
 
+        private static readonly Random random = new Random();
+
+        public static UInt64 GetRandomUInt64()
+        {
+            var bytes = new Byte[sizeof(ulong)];
+            random.NextBytes(bytes);
+            return BitConverter.ToUInt64(bytes, 0);
+        }
     }
 }
