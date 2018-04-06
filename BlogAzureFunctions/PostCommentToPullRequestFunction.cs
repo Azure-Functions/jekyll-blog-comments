@@ -1,139 +1,97 @@
 ﻿using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Extensions.Http;
-using Microsoft.Azure.WebJobs.Host;
+using Octokit;
 using System;
 using System.Collections.Generic;
-using System.Collections.Specialized;
 using System.Configuration;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
-using System.Security.Cryptography;
-using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
-using Octokit;
-using Octokit.Internal;
+using YamlDotNet.Serialization;
 
 namespace BlogAzureFunctions
 {
     public static class PostCommentToPullRequestFunction
     {
-        private static readonly Regex emailRegex = new Regex(@"^[^@\s]+@[^@\s]+\.[^@\s]+$");
+        struct MissingRequiredValue { }
+        static readonly Regex pathValidChars = new Regex(@"[^a-zA-Z-]");
+        static readonly Regex emailRegex = new Regex(@"^[^@\s]+@[^@\s]+\.[^@\s]+$");
 
         [FunctionName("PostComment")]
-        public static async Task<HttpResponseMessage> Run([HttpTrigger(AuthorizationLevel.Anonymous, "post")]HttpRequestMessage request, TraceWriter log)
+        public static async Task<HttpResponseMessage> Run([HttpTrigger(AuthorizationLevel.Anonymous, "post")] HttpRequestMessage request)
         {
-            if (!request.Content.IsFormData())
-                return request.CreateErrorResponse(HttpStatusCode.BadRequest, "Form data is missing.");
-
             var form = await request.Content.ReadAsFormDataAsync();
-            if (!TryValidateForm(form, out var errors))
-                return request.CreateErrorResponse(HttpStatusCode.BadRequest, String.Join("\n", errors));
-
-            await CreateCommentAsPullRequest(form);
-
-            return request.CreateResponse(HttpStatusCode.OK);
+            if (TryCreateCommentFromForm(form, out var comment, out var errors))
+                await CreateCommentAsPullRequest(comment);
+            return request.CreateResponse(errors.Any() ? HttpStatusCode.BadRequest : HttpStatusCode.OK, String.Join("\n", errors));
         }
 
-        private static bool TryValidateForm(NameValueCollection form, out List<string> errors)
+        private static async Task<PullRequest> CreateCommentAsPullRequest(Comment comment)
         {
-            errors = new List<string>();
-            var missingParameters = new[] { "post_id", "comment", "author", "email" }
-                .Select(k => form[k]).Where(String.IsNullOrWhiteSpace).ToArray();
+            var github = new GitHubClient(new ProductHeaderValue("PostCommentToPullRequest"),
+                new Octokit.Internal.InMemoryCredentialStore(new Credentials(ConfigurationManager.AppSettings["GitHubToken"])));
 
-            if (missingParameters.Length > 0)
-                errors.Add($"Form values missing for {String.Join(", ", missingParameters)}");
+            var repoOwnerName = ConfigurationManager.AppSettings["PullRequestRepository"].Split('/');
+            var repo = await github.Repository.Get(repoOwnerName[0], repoOwnerName[1]);
 
-            if (!emailRegex.IsMatch(form["email"]))
-                errors.Add("Form 'email' is not the correct format");
+            var defaultBranch = await github.Repository.Branch.Get(repo.Id, repo.DefaultBranch);
+            var newBranch = await github.Git.Reference.Create(repo.Id, new NewReference($"refs/heads/comment-{comment.id}", defaultBranch.Commit.Sha));
+            var fileRequest = new CreateFileRequest($"Comment by {comment.author} on {comment.post_id}", new SerializerBuilder().Build().Serialize(comment), newBranch.Ref);
+            fileRequest.Committer = new Committer(comment.author, comment.email, comment.date);
+            await github.Repository.Content.CreateFile(repo.Id, $"_data/comments/{comment.post_id}/{comment.id}.yml", fileRequest);
 
-            if (!Uri.TryCreate(form["url"], UriKind.Absolute, out var parsedUrl))
-                errors.Add("Form 'url' is not the correct format");
-
-            return errors.Count == 0;
+            return await github.Repository.PullRequest.Create(repo.Id, new NewPullRequest(fileRequest.Message, newBranch.Ref, defaultBranch.Name) { Body = comment.message });
         }
 
-        private static async Task<PullRequest> CreateCommentAsPullRequest(NameValueCollection form)
+        private static object ConvertParameter(string parameter, Type targetType)
         {
-            var gh = new GitHubClient(
-                new ProductHeaderValue("PostCommentToPullRequest"),
-                new InMemoryCredentialStore(new Credentials(ConfigurationManager.AppSettings["GitHubToken"])));
-
-            var repoId = ConfigurationManager.AppSettings["PullRequestRepository"].Split('/');
-            var repo = await gh.Repository.Get(repoId[0], repoId[1]);
-            var defaultBranch = await gh.Repository.Branch.Get(repo.Id, repo.DefaultBranch);
-
-            var comment = Comment.BuildFromForm(form);
-
-            var newReference = new NewReference($"refs/heads/comment-{comment.id}", defaultBranch.Commit.Sha);
-            var newBranch = await gh.Git.Reference.Create(repo.Id, newReference);
-
-            var committer = new Committer(form["author"], form["email"], DateTime.UtcNow);
-            var fileContents = CreateFileContents(comment);
-            var fileRequest = new CreateFileRequest($"Comment by {form["author"]} on {comment.post_id}", fileContents, newBranch.Ref);
-            fileRequest.Committer = committer;
-            await gh.Repository.Content.CreateFile(repo.Id, $"_data/comments/{comment.post_id}/{comment.id}.yml", fileRequest);
-
-            var pullRequest = new NewPullRequest(fileRequest.Message, newBranch.Ref, defaultBranch.Name) { Body = comment.message };
-            return await gh.Repository.PullRequest.Create(repo.Id, pullRequest);
+            return String.IsNullOrWhiteSpace(parameter) ? null : System.ComponentModel.TypeDescriptor.GetConverter(targetType).ConvertFrom(parameter);
         }
 
-        private static string CreateFileContents(Comment comment)
+        private static bool TryCreateCommentFromForm(System.Collections.Specialized.NameValueCollection form, out Comment comment, out List<string> errors)
         {
-            var builder = new StringBuilder();
-            builder.AppendLine($"id: {comment.id}");
-            builder.AppendLine($"name: {comment.author}");
-            builder.AppendLine($"email: {comment.email}");
-            builder.AppendLine($"gravatar: {comment.gravatar}");
-            builder.AppendLine($"url: {comment.url}");
-            builder.AppendLine($"date: {comment.date:u}");
-            builder.AppendLine($"message: {comment.message}");
-            return builder.ToString();
+            var constructor = typeof(Comment).GetConstructors()[0];
+            var values = constructor.GetParameters()
+                .ToDictionary(p => p.Name, p => ConvertParameter(form[p.Name], p.ParameterType) ?? (p.HasDefaultValue ? p.DefaultValue : new MissingRequiredValue()));
+
+            errors = values.Where(p => p.Value is MissingRequiredValue).Select(p => $"Form value missing for {p.Key}").ToList();
+            if (values["email"] is string s && !emailRegex.IsMatch(s))
+                errors.Add("email not in correct format");
+
+            comment = errors.Any() ? null : (Comment)constructor.Invoke(values.Values.ToArray());
+            return !errors.Any();
         }
 
         class Comment
         {
-            private static readonly Regex pathValidChars = new Regex(@"[^a-zA-Z-]");
-
-            public static Comment BuildFromForm(NameValueCollection form)
+            public Comment(string post_id, string message, string author, string email, DateTime? date = null, Uri url = null, int? id = null, string gravatar = null)
             {
-                return new Comment(
-                    pathValidChars.Replace(form["post_id"], "-"),
-                    form["comment"],
-                    form["author"],
-                    form["email"],
-                    DateTime.UtcNow,
-                    Uri.TryCreate(form["url"], UriKind.Absolute, out var parsedUrl) ? parsedUrl : null);
-            }
-
-            public Comment(string post_id, string message, string author, string email, DateTime date,
-                Uri url = null, int? id = null, string gravatar = null)
-            {
-                this.post_id = post_id;
+                this.post_id = pathValidChars.Replace(post_id, "-");
                 this.message = message;
                 this.author = author;
                 this.email = email;
-                this.date = date;
+                this.date = date ?? DateTime.UtcNow;
                 this.url = url;
-
-                this.id = id ?? new { post_id, author, message, date }.GetHashCode();
+                this.id = id ?? new { this.post_id, this.author, this.message, this.date }.GetHashCode();
                 this.gravatar = gravatar ?? EncodeGravatar(email);
             }
 
             public int id { get; }
             public string post_id { get; }
-            public string message { get; }
+            public DateTime date { get; }
             public string author { get; }
             public string email { get; }
-            public Uri url { get; }
             public string gravatar { get; }
-            public DateTime date { get; }
+            [YamlMember(typeof(string))]
+            public Uri url { get; }
+            public string message { get; }
 
-            private static string EncodeGravatar(string email)
+            static string EncodeGravatar(string email)
             {
-                using (var md5 = MD5.Create())
-                    return BitConverter.ToString(md5.ComputeHash(Encoding.UTF8.GetBytes(email))).Replace("-", "").ToLower();
+                using (var md5 = System.Security.Cryptography.MD5.Create())
+                    return BitConverter.ToString(md5.ComputeHash(System.Text.Encoding.UTF8.GetBytes(email))).Replace("-", "").ToLower();
             }
         }
     }
