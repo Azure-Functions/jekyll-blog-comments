@@ -25,6 +25,7 @@ namespace BlogAzureFunctions
             var form = await request.Content.ReadAsFormDataAsync();
             if (TryCreateCommentFromForm(form, out var comment, out var errors))
                 await CreateCommentAsPullRequest(comment);
+
             return request.CreateResponse(errors.Any() ? HttpStatusCode.BadRequest : HttpStatusCode.OK, String.Join("\n", errors));
         }
 
@@ -64,7 +65,7 @@ namespace BlogAzureFunctions
             return !errors.Any();
         }
 
-        class Comment
+        private class Comment
         {
             public Comment(string post_id, string message, string author, string email, DateTime? date = null, Uri url = null, int? id = null, string gravatar = null)
             {
