@@ -26,7 +26,10 @@ namespace BlogAzureFunctions
             if (TryCreateCommentFromForm(form, out var comment, out var errors))
                 await CreateCommentAsPullRequest(comment);
 
-            return request.CreateResponse(errors.Any() ? HttpStatusCode.BadRequest : HttpStatusCode.OK, String.Join("\n", errors));
+            var response = request.CreateResponse(errors.Any() ? HttpStatusCode.BadRequest : HttpStatusCode.OK, String.Join("\n", errors));
+            if (form["redirect"] != null)
+                response.Headers.Location = new Uri(form["redirect"]);
+            return response;
         }
 
         private static async Task<PullRequest> CreateCommentAsPullRequest(Comment comment)
