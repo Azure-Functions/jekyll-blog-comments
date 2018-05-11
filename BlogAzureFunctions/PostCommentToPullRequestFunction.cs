@@ -27,8 +27,8 @@ namespace BlogAzureFunctions
                 await CreateCommentAsPullRequest(comment);
 
             var response = request.CreateResponse(errors.Any() ? HttpStatusCode.BadRequest : HttpStatusCode.OK, String.Join("\n", errors));
-            if (form["redirect"] != null)
-                response.Headers.Location = new Uri(form["redirect"]);
+//            if (form["redirect"] != null)
+//                response.Headers.Location = new Uri(form["redirect"]);
             return response;
         }
 
