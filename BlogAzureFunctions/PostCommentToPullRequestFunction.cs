@@ -70,11 +70,11 @@ namespace BlogAzureFunctions
 
         private class Comment
         {
-            public Comment(string post_id, string message, string author, string email, DateTime? date = null, Uri url = null, int? id = null, string gravatar = null)
+            public Comment(string post_id, string message, string name, string email, DateTime? date = null, Uri url = null, int? id = null, string gravatar = null)
             {
                 this.post_id = pathValidChars.Replace(post_id, "-");
                 this.message = message;
-                this.author = author;
+                this.name = name;
                 this.email = email;
                 this.date = date ?? DateTime.UtcNow;
                 this.url = url;
@@ -87,7 +87,7 @@ namespace BlogAzureFunctions
 
             public int id { get; }            
             public DateTime date { get; }
-            public string author { get; }
+            public string name { get; }
             public string email { get; }
             public string gravatar { get; }
 
