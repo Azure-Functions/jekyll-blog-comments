@@ -42,8 +42,8 @@ namespace BlogAzureFunctions
 
             var defaultBranch = await github.Repository.Branch.Get(repo.Id, repo.DefaultBranch);
             var newBranch = await github.Git.Reference.Create(repo.Id, new NewReference($"refs/heads/comment-{comment.id}", defaultBranch.Commit.Sha));
-            var fileRequest = new CreateFileRequest($"Comment by {comment.author} on {comment.post_id}", new SerializerBuilder().Build().Serialize(comment), newBranch.Ref);
-            fileRequest.Committer = new Committer(comment.author, comment.email, comment.date);
+            var fileRequest = new CreateFileRequest($"Comment by {comment.name} on {comment.post_id}", new SerializerBuilder().Build().Serialize(comment), newBranch.Ref);
+            fileRequest.Committer = new Committer(comment.name, comment.email, comment.date);
             await github.Repository.Content.CreateFile(repo.Id, $"_data/comments/{comment.post_id}/{comment.id}.yml", fileRequest);
 
             return await github.Repository.PullRequest.Create(repo.Id, new NewPullRequest(fileRequest.Message, newBranch.Ref, defaultBranch.Name) { Body = comment.message });
@@ -78,7 +78,7 @@ namespace BlogAzureFunctions
                 this.email = email;
                 this.date = date ?? DateTime.UtcNow;
                 this.url = url;
-                this.id = id ?? new { this.post_id, this.author, this.message, this.date }.GetHashCode();
+                this.id = id ?? new { this.post_id, this.name, this.message, this.date }.GetHashCode();
                 this.gravatar = gravatar ?? EncodeGravatar(email);
             }
 
