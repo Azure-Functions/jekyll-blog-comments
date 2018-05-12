@@ -84,8 +84,9 @@ namespace BlogAzureFunctions
 
             [YamlIgnore]
             public string post_id { get; }
-            
+            [YamlIgnore]            
             public int id { get; }
+            
             public DateTime date { get; }
             public string author { get; }
             public string email { get; }
