@@ -82,14 +82,18 @@ namespace BlogAzureFunctions
                 this.gravatar = gravatar ?? EncodeGravatar(email);
             }
 
-            public int id { get; }
+            [YamlIgnore]
             public string post_id { get; }
+            
+            public int id { get; }
             public DateTime date { get; }
             public string author { get; }
             public string email { get; }
             public string gravatar { get; }
+
             [YamlMember(typeof(string))]
             public Uri url { get; }
+            
             public string message { get; }
 
             static string EncodeGravatar(string email)
