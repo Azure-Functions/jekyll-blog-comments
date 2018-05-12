@@ -27,8 +27,8 @@ namespace BlogAzureFunctions
                 await CreateCommentAsPullRequest(comment);
 
             var response = request.CreateResponse(errors.Any() ? HttpStatusCode.BadRequest : HttpStatusCode.OK, String.Join("\n", errors));
-//            if (form["redirect"] != null)
-//                response.Headers.Location = new Uri(form["redirect"]);
+            if (form["redirect"] != null)
+                response.Headers.Location = new Uri(form["redirect"]);
             return response;
         }
 
@@ -85,7 +85,7 @@ namespace BlogAzureFunctions
             [YamlIgnore]
             public string post_id { get; }
 
-            public int id { get; }            
+            public int id { get; }
             public DateTime date { get; }
             public string name { get; }
             public string email { get; }
@@ -93,7 +93,7 @@ namespace BlogAzureFunctions
 
             [YamlMember(typeof(string))]
             public Uri url { get; }
-            
+
             public string message { get; }
 
             static string EncodeGravatar(string email)
