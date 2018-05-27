@@ -13,7 +13,7 @@ using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using YamlDotNet.Serialization;
 
-namespace BlogAzureFunctions
+namespace JekyllBlogCommentsAzure
 {
     public static class PostCommentToPullRequestFunction
     {
