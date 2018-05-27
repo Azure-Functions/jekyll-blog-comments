@@ -3,6 +3,7 @@ using Microsoft.Azure.WebJobs.Extensions.Http;
 using Microsoft.Azure.WebJobs.Host;
 using Microsoft.WindowsAzure.Storage.Table;
 using System;
+using System.Configuration;
 using System.Net;
 using System.Net.Http;
 using System.Threading.Tasks;
@@ -13,7 +14,7 @@ namespace BlogAzureFunctions
     {
         public PageViewCount(string pageName)
         {
-            PartitionKey = "damieng.com";
+            PartitionKey = ConfigurationManager.AppSettings["BlogPartitionKey"];
             RowKey = pageName;
         }
 
