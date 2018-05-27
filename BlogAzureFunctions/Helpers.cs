@@ -16,7 +16,7 @@ namespace BlogAzureFunctions
 
         public static CloudStorageAccount GetCloudStorageAccount()
         {
-            var connection = ConfigurationManager.AppSettings["DamienGTableStorage"];
+            var connection = ConfigurationManager.AppSettings["BlogCommentTableStorage"];
             return connection == null ? CloudStorageAccount.DevelopmentStorageAccount : CloudStorageAccount.Parse(connection);
         }
 
