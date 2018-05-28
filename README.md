@@ -1,19 +1,19 @@
 # Jekyll Blog Comments Azure Function
 
-An Azure Function that receives comment form posts for https://github.com/damieng/jekyll-blog-comments, a Jekyll-based blog comment system.
+An Azure Function App that receives comment form posts and creates a pull request against your GitHub repository as part of the [jekyll-blog-comments](https://github.com/damieng/jekyll-blog-comments) system.
 
-This repository includes just one function:
+The app includes just one function:
 
-* `PostComment` - receives a comment form POST submission and creates a PR on the target repository to add a comment to the Jekyll site.
+* `PostComment` - receives form POST submission and creates a PR to add the comment to your Jekyll site
 
 ## Setup
 
 To set this up, you'll need to have an [Azure Portal account](https://portal.azure.com).
 
-0. Fork this repository.
-1. [Create an Azure function](https://docs.microsoft.com/en-us/azure/azure-functions/functions-create-first-azure-function).
-2. [Set up your function to deploy from GitHub](https://docs.microsoft.com/en-us/azure/azure-functions/scripts/functions-cli-create-function-app-github-continuous). Point it to your fork of this repository.
-3. Set up the following [App Settings for your Azure Function App](https://docs.microsoft.com/en-us/azure/azure-functions/functions-how-to-use-azure-function-app-settings).
+1. Fork this repository.
+2. [Create an Azure function](https://docs.microsoft.com/en-us/azure/azure-functions/functions-create-first-azure-function).
+3. [Set up your function to deploy from GitHub](https://docs.microsoft.com/en-us/azure/azure-functions/scripts/functions-cli-create-function-app-github-continuous). Point it to your fork of this repository.
+4. Set up the following [App Settings for your Azure Function App](https://docs.microsoft.com/en-us/azure/azure-functions/functions-how-to-use-azure-function-app-settings).
 
 | Setting | Value
 | -------- | -------
