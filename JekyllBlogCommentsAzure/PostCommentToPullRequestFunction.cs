@@ -18,7 +18,7 @@ namespace JekyllBlogCommentsAzure
     public static class PostCommentToPullRequestFunction
     {
         struct MissingRequiredValue { } // Placeholder for missing required form values
-        static readonly Regex validPathChars = new Regex(@"[^a-zA-Z-]"); // Valid characters when mapping from the blog post slug to a file path
+        static readonly Regex validPathChars = new Regex(@"[^a-zA-Z0-9-]"); // Valid characters when mapping from the blog post slug to a file path
         static readonly Regex validEmail = new Regex(@"^[^@\s]+@[^@\s]+\.[^@\s]+$"); // Simplest form of email validation
 
         [FunctionName("PostComment")]
