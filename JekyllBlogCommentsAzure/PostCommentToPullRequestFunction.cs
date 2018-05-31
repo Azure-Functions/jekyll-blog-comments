@@ -9,6 +9,8 @@ using System.Configuration;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
+using System.Security.Cryptography;
+using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using YamlDotNet.Serialization;
@@ -53,10 +55,12 @@ namespace JekyllBlogCommentsAzure
             var defaultBranch = await github.Repository.Branch.Get(repo.Id, repo.DefaultBranch);
             var newBranch = await github.Git.Reference.Create(repo.Id, new NewReference($"refs/heads/comment-{comment.id}", defaultBranch.Commit.Sha));
 
+            var committerEmail = comment.email;
+            comment.email = Encryption(comment.email);
             // Create a new file with the comments in it
             var fileRequest = new CreateFileRequest($"Comment by {comment.name} on {comment.post_id}", new SerializerBuilder().Build().Serialize(comment), newBranch.Ref)
             {
-                Committer = new Committer(comment.name, comment.email, comment.date)
+                Committer = new Committer(comment.name, committerEmail, comment.date)
             };
             await github.Repository.Content.CreateFile(repo.Id, $"_data/comments/{comment.post_id}/{comment.id}.yml", fileRequest);
 
@@ -72,6 +76,34 @@ namespace JekyllBlogCommentsAzure
             return String.IsNullOrWhiteSpace(parameter)
                 ? null
                 : TypeDescriptor.GetConverter(targetType).ConvertFrom(parameter);
+        }
+
+        private static string Encryption(string strText)
+        {
+            // TODO: have this come from local.settings.json...
+            // Public key here is just an example, you'd want to create a new public / private key if you ever want to decrypt the value
+            var publicKey = "<RSAKeyValue><Modulus>21wEnTU+mcD2w0Lfo1Gv4rtcSWsQJQTNa6gio05AOkV/Er9w3Y13Ddo5wGtjJ19402S71HUeN0vbKILLJdRSES5MHSdJPSVrOqdrll/vLXxDxWs/U0UT1c8u6k/Ogx9hTtZxYwoeYqdhDblof3E75d9n2F0Zvf6iTb4cI7j6fMs=</Modulus><Exponent>AQAB</Exponent></RSAKeyValue>";
+
+            var testData = Encoding.UTF8.GetBytes(strText);
+
+            using (var rsa = new RSACryptoServiceProvider(1024))
+            {
+                try
+                {
+                    // client encrypting data with public key issued by server                    
+                    rsa.FromXmlString(publicKey.ToString());
+
+                    var encryptedData = rsa.Encrypt(testData, true);
+
+                    var base64Encrypted = Convert.ToBase64String(encryptedData);
+
+                    return base64Encrypted;
+                }
+                finally
+                {
+                    rsa.PersistKeyInCsp = false;
+                }
+            }
         }
 
         /// <summary>
@@ -123,7 +155,7 @@ namespace JekyllBlogCommentsAzure
             public int id { get; }
             public DateTime date { get; }
             public string name { get; }
-            public string email { get; }
+            public string email { get; set; }
             public string gravatar { get; }
 
             [YamlMember(typeof(string))]
