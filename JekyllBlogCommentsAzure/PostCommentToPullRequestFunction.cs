@@ -47,10 +47,8 @@ namespace JekyllBlogCommentsAzure
 
         private static bool AreSameSites(string commentSite, string postedCommentSite)
         {
-            Uri commentSiteUri;
-            Uri postedCommentSiteUri;
-            return Uri.TryCreate(commentSite, UriKind.Absolute, out commentSiteUri)
-                && Uri.TryCreate(postedCommentSite, UriKind.Absolute, out postedCommentSiteUri)
+            return Uri.TryCreate(commentSite, UriKind.Absolute, out var commentSiteUri)
+                && Uri.TryCreate(postedCommentSite, UriKind.Absolute, out var postedCommentSiteUri)
                 && commentSiteUri.Host.Equals(postedCommentSiteUri.Host, StringComparison.OrdinalIgnoreCase);
         }
 
