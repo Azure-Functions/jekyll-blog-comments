@@ -25,6 +25,12 @@ namespace JekyllBlogCommentsAzure
         public static async Task<HttpResponseMessage> Run([HttpTrigger(AuthorizationLevel.Anonymous, "post")] HttpRequestMessage request)
         {
             var form = await request.Content.ReadAsFormDataAsync();
+
+            // Make sure the site posting the comment is the correct site.
+            var commentSite = ConfigurationManager.AppSettings["CommentWebsiteUrl"];
+            if (commentSite != null && !AreSameSites(commentSite, form["comment-site"]))
+                return request.CreateErrorResponse(HttpStatusCode.BadRequest, "Please make sure you post this to your own Jekyll comments receiever.");
+
             if (TryCreateCommentFromForm(form, out var comment, out var errors))
                 await CreateCommentAsPullRequest(comment);
 
@@ -37,6 +43,15 @@ namespace JekyllBlogCommentsAzure
             var response = request.CreateResponse(HttpStatusCode.Redirect);
             response.Headers.Location = redirectUri;
             return response;
+        }
+
+        private static bool AreSameSites(string commentSite, string postedCommentSite)
+        {
+            Uri commentSiteUri;
+            Uri postedCommentSiteUri;
+            return Uri.TryCreate(commentSite, UriKind.Absolute, out commentSiteUri)
+                && Uri.TryCreate(postedCommentSite, UriKind.Absolute, out postedCommentSiteUri)
+                && commentSiteUri.Host.Equals(postedCommentSiteUri.Host, StringComparison.OrdinalIgnoreCase);
         }
 
         private static async Task<PullRequest> CreateCommentAsPullRequest(Comment comment)
