@@ -28,7 +28,7 @@ namespace JekyllBlogCommentsAzure
 
             // Make sure the site posting the comment is the correct site.
             var commentSite = ConfigurationManager.AppSettings["CommentWebsiteUrl"];
-            if (commentSite != null && !AreSameSites(commentSite, form["comment-site"]))
+            if (!String.IsNullOrWhiteSpace(commentSite) && !AreSameSites(commentSite, form["comment-site"]))
                 return request.CreateErrorResponse(HttpStatusCode.BadRequest, "Please make sure you post this to your own Jekyll comments receiever.");
 
             if (TryCreateCommentFromForm(form, out var comment, out var errors))
