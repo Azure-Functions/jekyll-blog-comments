@@ -118,22 +118,23 @@ namespace JekyllBlogCommentsAzure
         /// </summary>
         private class Comment
         {
-            public Comment(string post_id, string message, string name, string email, DateTime? date = null, Uri url = null, int? id = null, string gravatar = null)
+            public Comment(string post_id, string message, string name, string email, Uri url = null)
             {
                 this.post_id = validPathChars.Replace(post_id, "-");
                 this.message = message;
                 this.name = name;
                 this.email = email;
-                this.date = date ?? DateTime.UtcNow;
                 this.url = url;
-                this.id = id ?? new { this.post_id, this.name, this.message, this.date }.GetHashCode();
-                this.gravatar = gravatar ?? EncodeGravatar(email);
+
+                date = DateTime.UtcNow;
+                id = new {this.post_id, this.name, this.message, this.date}.GetHashCode().ToString("x8");
+                gravatar = EncodeGravatar(email);
             }
 
             [YamlIgnore]
             public string post_id { get; }
 
-            public int id { get; }
+            public string id { get; }
             public DateTime date { get; }
             public string name { get; }
             public string email { get; }

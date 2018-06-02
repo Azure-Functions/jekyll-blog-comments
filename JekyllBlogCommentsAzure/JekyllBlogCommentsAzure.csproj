@@ -3,6 +3,9 @@
     <TargetFramework>net461</TargetFramework>
     <Authors>Damien Guard</Authors>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
+    <NoWarn>IDE1006;1701;1702;1705</NoWarn>
+  </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.NET.Sdk.Functions" Version="1.0.13" />
     <PackageReference Include="Octokit" Version="0.29.0" />
