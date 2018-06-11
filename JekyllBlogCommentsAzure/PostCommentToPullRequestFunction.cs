@@ -118,7 +118,7 @@ namespace JekyllBlogCommentsAzure
         /// </summary>
         private class Comment
         {
-            public Comment(string post_id, string message, string name, string email, Uri url = null)
+            public Comment(string post_id, string message, string name, string email = null, Uri url = null, string avatar = null)
             {
                 this.post_id = validPathChars.Replace(post_id, "-");
                 this.message = message;
@@ -128,7 +128,8 @@ namespace JekyllBlogCommentsAzure
 
                 date = DateTime.UtcNow;
                 id = new {this.post_id, this.name, this.message, this.date}.GetHashCode().ToString("x8");
-                gravatar = EncodeGravatar(email);
+                if (Uri.TryCreate(avatar, UriKind.Absolute, out Uri avatarUrl))
+                    this.avatar = avatarUrl;
             }
 
             [YamlIgnore]
@@ -138,18 +139,14 @@ namespace JekyllBlogCommentsAzure
             public DateTime date { get; }
             public string name { get; }
             public string email { get; }
-            public string gravatar { get; }
+
+            [YamlMember(typeof(string))]
+            public Uri avatar { get; }
 
             [YamlMember(typeof(string))]
             public Uri url { get; }
 
             public string message { get; }
-
-            static string EncodeGravatar(string email)
-            {
-                using (var md5 = System.Security.Cryptography.MD5.Create())
-                    return BitConverter.ToString(md5.ComputeHash(System.Text.Encoding.UTF8.GetBytes(email))).Replace("-", "").ToLower();
-            }
         }
     }
 }
