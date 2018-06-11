@@ -76,7 +76,7 @@ namespace JekyllBlogCommentsAzure
             // Create a pull request for the new branch and file
             return await github.Repository.PullRequest.Create(repo.Id, new NewPullRequest(fileRequest.Message, newBranch.Ref, defaultBranch.Name)
             {
-                Body = comment.message
+                Body = $"avatar: <img src=\"{comment.avatar}\" width=\"64\" height=\"64\" />\n\n{comment.message}"
             });
         }
 
