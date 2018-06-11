@@ -69,7 +69,7 @@ namespace JekyllBlogCommentsAzure
             // Create a new file with the comments in it
             var fileRequest = new CreateFileRequest($"Comment by {comment.name} on {comment.post_id}", new SerializerBuilder().Build().Serialize(comment), newBranch.Ref)
             {
-                Committer = new Committer(comment.name, comment.email, comment.date)
+                Committer = new Committer(comment.name, comment.email ?? ConfigurationManager.AppSettings["CommentFallbackCommitEmail"] ?? "redacted@example.com", comment.date)
             };
             await github.Repository.Content.CreateFile(repo.Id, $"_data/comments/{comment.post_id}/{comment.id}.yml", fileRequest);
 
