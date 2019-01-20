@@ -20,3 +20,4 @@ To set this up, you'll need to have an [Azure Portal account](https://portal.azu
 | `PullRequestRepository` | `owner/name` of the repository that houses your Jekyll site for pull requests to be created against. For example, `haacked/haacked.com` will post to https://github.com/haacked/haacked.com
 | `GitHubToken` | A [GitHub personal access token](https://help.github.com/articles/creating-a-personal-access-token-for-the-command-line/) with access to edit your target repository.
 | `CommentWebsiteUrl` | The URL to the website that hosts the comments. This is used to make sure the correct site is posting comments to the receiver.
+| `CommentFallbackCommitEmail` | The email address to use for GitHub commits and PR's if the form does not supply one.
