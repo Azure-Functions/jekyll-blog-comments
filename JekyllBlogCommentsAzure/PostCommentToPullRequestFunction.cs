@@ -111,15 +111,15 @@ namespace JekyllBlogCommentsAzure
                 errors.Add("email not in correct format");
 
             comment = errors.Any() ? null : (Comment)constructor.Invoke(values.Values.ToArray());
-            var hasErrors = !errors.Any();
+            var notHasErrors = !errors.Any();
 
-            if (!hasErrors)
+            if (notHasErrors)
             {
                 var textAnalysis = new SentimentAnalysis();
                 comment.score = textAnalysis.Analyze(comment.message);
             }
 
-            return hasErrors;
+            return notHasErrors;
         }
 
         /// <summary>
