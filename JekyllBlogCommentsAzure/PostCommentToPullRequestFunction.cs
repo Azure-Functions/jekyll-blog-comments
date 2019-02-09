@@ -111,7 +111,15 @@ namespace JekyllBlogCommentsAzure
                 errors.Add("email not in correct format");
 
             comment = errors.Any() ? null : (Comment)constructor.Invoke(values.Values.ToArray());
-            return !errors.Any();
+            var hasErrors = !errors.Any();
+
+            if (!hasErrors)
+            {
+                var textAnalysis = new SentimentAnalysis();
+                comment.score = textAnalysis.Analyze(comment.message);
+            }
+
+            return hasErrors;
         }
 
         /// <summary>
@@ -140,6 +148,7 @@ namespace JekyllBlogCommentsAzure
             public DateTime date { get; }
             public string name { get; }
             public string email { get; }
+            public string score { get; set; }
 
             [YamlMember(typeof(string))]
             public Uri avatar { get; }
