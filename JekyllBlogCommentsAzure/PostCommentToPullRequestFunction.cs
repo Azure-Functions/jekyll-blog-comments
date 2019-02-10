@@ -77,7 +77,7 @@ namespace JekyllBlogCommentsAzure
             // Create a pull request for the new branch and file
             return await github.Repository.PullRequest.Create(repo.Id, new NewPullRequest(fileRequest.Message, newBranch.Ref, defaultBranch.Name)
             {
-                Body = $"avatar: <img src=\"{comment.avatar}\" width=\"64\" height=\"64\" />\n\n{comment.message}"
+                Body = $"avatar: <img src=\"{comment.avatar}\" width=\"64\" height=\"64\" />\n\nScore:{comment.score}\n\n{comment.message}"
             });
         }
 
@@ -111,7 +111,17 @@ namespace JekyllBlogCommentsAzure
                 errors.Add("email not in correct format");
 
             comment = errors.Any() ? null : (Comment)constructor.Invoke(values.Values.ToArray());
-            return !errors.Any();
+            var isFormValid = !errors.Any();
+
+            if (isFormValid && !string.IsNullOrEmpty(ConfigurationManager.AppSettings["SentimentAnalysis.SubscriptionKey"]))
+            {
+                var textAnalysis = new SentimentAnalysis(ConfigurationManager.AppSettings["SentimentAnalysis.SubscriptionKey"], 
+                    ConfigurationManager.AppSettings["SentimentAnalysis.Region"],
+                    ConfigurationManager.AppSettings["SentimentAlaysis.Lang"]);
+                comment.score = textAnalysis.Analyze(comment.message);
+            }
+
+            return isFormValid;
         }
 
         /// <summary>
@@ -140,6 +150,7 @@ namespace JekyllBlogCommentsAzure
             public DateTime date { get; }
             public string name { get; }
             public string email { get; }
+            public string score { get; set; }
 
             [YamlMember(typeof(string))]
             public Uri avatar { get; }
