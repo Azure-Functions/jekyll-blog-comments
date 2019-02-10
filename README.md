@@ -12,8 +12,9 @@ To set this up, you'll need to have an [Azure Portal account](https://portal.azu
 
 1. Fork this repository
 2. [Create a **v1** Azure Function](https://docs.microsoft.com/en-us/azure/azure-functions/functions-create-first-azure-function)
-3. [Set up your function to deploy from your fork](https://docs.microsoft.com/en-us/azure/azure-functions/scripts/functions-cli-create-function-app-github-continuous)
-4. Set up the following [App Settings for your Azure Function](https://docs.microsoft.com/en-us/azure/azure-functions/functions-how-to-use-azure-function-app-settings)
+3. [Create subscription key in Microsoft Azure Recognition](https://docs.microsoft.com/en-us/azure/cognitive-services/cognitive-services-apis-create-account) **optional**
+4. [Set up your function to deploy from your fork](https://docs.microsoft.com/en-us/azure/azure-functions/scripts/functions-cli-create-function-app-github-continuous)
+5. Set up the following [App Settings for your Azure Function](https://docs.microsoft.com/en-us/azure/azure-functions/functions-how-to-use-azure-function-app-settings)
 
 | Setting | Value
 | -------- | -------
@@ -21,3 +22,6 @@ To set this up, you'll need to have an [Azure Portal account](https://portal.azu
 | `GitHubToken` | A [GitHub personal access token](https://help.github.com/articles/creating-a-personal-access-token-for-the-command-line/) with access to edit your target repository.
 | `CommentWebsiteUrl` | The URL to the website that hosts the comments. This is used to make sure the correct site is posting comments to the receiver.
 | `CommentFallbackCommitEmail` | The email address to use for GitHub commits and PR's if the form does not supply one.
+| `SentimentAnalysis.SubscriptionKey` | Subscription Key for Microsoft Azure Recognition, if you don't want to use, just leave empty.
+| `SentimentAnalysis.Region` | Region for your Subscription key (E.g.: westus)
+| `SentimentAlaysis.Lang` | Language for comment, [find lang code here](https://docs.microsoft.com/en-us/azure/cognitive-services/text-analytics/language-support)
