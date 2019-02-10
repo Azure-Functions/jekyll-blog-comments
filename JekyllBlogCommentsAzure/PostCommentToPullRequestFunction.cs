@@ -111,9 +111,9 @@ namespace JekyllBlogCommentsAzure
                 errors.Add("email not in correct format");
 
             comment = errors.Any() ? null : (Comment)constructor.Invoke(values.Values.ToArray());
-            var notHasErrors = !errors.Any();
+            var isFormValid = !errors.Any();
 
-            if (notHasErrors && !string.IsNullOrEmpty(ConfigurationManager.AppSettings["SentimentAnalysis.SubscriptionKey"]))
+            if (isFormValid && !string.IsNullOrEmpty(ConfigurationManager.AppSettings["SentimentAnalysis.SubscriptionKey"]))
             {
                 var textAnalysis = new SentimentAnalysis(ConfigurationManager.AppSettings["SentimentAnalysis.SubscriptionKey"], 
                     ConfigurationManager.AppSettings["SentimentAnalysis.Region"],
@@ -121,7 +121,7 @@ namespace JekyllBlogCommentsAzure
                 comment.score = textAnalysis.Analyze(comment.message);
             }
 
-            return notHasErrors;
+            return isFormValid;
         }
 
         /// <summary>
