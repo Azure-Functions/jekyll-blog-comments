@@ -113,9 +113,11 @@ namespace JekyllBlogCommentsAzure
             comment = errors.Any() ? null : (Comment)constructor.Invoke(values.Values.ToArray());
             var notHasErrors = !errors.Any();
 
-            if (notHasErrors)
+            if (notHasErrors && !string.IsNullOrEmpty(ConfigurationManager.AppSettings["SentimentAnalysis.SubscriptionKey"]))
             {
-                var textAnalysis = new SentimentAnalysis();
+                var textAnalysis = new SentimentAnalysis(ConfigurationManager.AppSettings["SentimentAnalysis.SubscriptionKey"], 
+                    ConfigurationManager.AppSettings["SentimentAnalysis.Region"],
+                    ConfigurationManager.AppSettings["SentimentAlaysis.Lang"]);
                 comment.score = textAnalysis.Analyze(comment.message);
             }
 
