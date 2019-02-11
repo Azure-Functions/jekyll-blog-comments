@@ -119,6 +119,8 @@ namespace JekyllBlogCommentsAzure
                     ConfigurationManager.AppSettings["SentimentAnalysis.Region"],
                     ConfigurationManager.AppSettings["SentimentAlaysis.Lang"]);
                 comment.score = textAnalysis.Analyze(comment.message);
+            } else {
+                comment.score = "Not configured";
             }
 
             return isFormValid;
