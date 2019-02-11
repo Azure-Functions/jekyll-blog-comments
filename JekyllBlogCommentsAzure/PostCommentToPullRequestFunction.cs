@@ -21,7 +21,7 @@ namespace JekyllBlogCommentsAzure
         static readonly Regex validPathChars = new Regex(@"[^a-zA-Z0-9-]"); // Valid characters when mapping from the blog post slug to a file path
         static readonly Regex validEmail = new Regex(@"^[^@\s]+@[^@\s]+\.[^@\s]+$"); // Simplest form of email validation
 
-        [FunctionName("PostComment")]
+        [FunctionName("PostComment")] // Actual form post handler
         public static async Task<HttpResponseMessage> Run([HttpTrigger(AuthorizationLevel.Anonymous, "post")] HttpRequestMessage request)
         {
             var form = await request.Content.ReadAsFormDataAsync();
@@ -43,6 +43,13 @@ namespace JekyllBlogCommentsAzure
 
             var response = request.CreateResponse(HttpStatusCode.Redirect);
             response.Headers.Location = redirectUri;
+            return response;
+        }
+        
+        [FunctionName("Preload")] // Ping this to preload the function and avoid cold starts.
+        public static async Task<HttpResponseMessage> Preload([HttpTrigger(AuthorizationLevel.Anonymous, "get")] HttpRequestMessage request)
+        {
+            var response = request.CreateResponse(HttpStatusCode.OK);
             return response;
         }
 
@@ -77,7 +84,7 @@ namespace JekyllBlogCommentsAzure
             // Create a pull request for the new branch and file
             return await github.Repository.PullRequest.Create(repo.Id, new NewPullRequest(fileRequest.Message, newBranch.Ref, defaultBranch.Name)
             {
-                Body = $"avatar: <img src=\"{comment.avatar}\" width=\"64\" height=\"64\" />\n\nScore:{comment.score}\n\n{comment.message}"
+                Body = $"avatar: <img src=\"{comment.avatar}\" width=\"64\" height=\"64\" />\n\nScore: {comment.score}\n\n{comment.message}"
             });
         }
 
