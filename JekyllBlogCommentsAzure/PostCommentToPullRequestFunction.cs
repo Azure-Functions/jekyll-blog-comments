@@ -5,7 +5,6 @@ using System;
 using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.ComponentModel;
-using System.Configuration;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
@@ -20,6 +19,7 @@ namespace JekyllBlogCommentsAzure
         struct MissingRequiredValue { } // Placeholder for missing required form values
         static readonly Regex validPathChars = new Regex(@"[^a-zA-Z0-9-]"); // Valid characters when mapping from the blog post slug to a file path
         static readonly Regex validEmail = new Regex(@"^[^@\s]+@[^@\s]+\.[^@\s]+$"); // Simplest form of email validation
+        static readonly IConfiguration config = new WebConfigurator();
 
         [FunctionName("PostComment")] // Actual form post handler
         public static async Task<HttpResponseMessage> Run([HttpTrigger(AuthorizationLevel.Anonymous, "post")] HttpRequestMessage request)
@@ -27,7 +27,7 @@ namespace JekyllBlogCommentsAzure
             var form = await request.Content.ReadAsFormDataAsync();
 
             // Make sure the site posting the comment is the correct site.
-            var allowedSite = ConfigurationManager.AppSettings["CommentWebsiteUrl"];
+            var allowedSite = config.CommentWebsiteUrl;
             var postedSite = form["comment-site"];
             if (!String.IsNullOrWhiteSpace(allowedSite) && !AreSameSites(allowedSite, postedSite))
                 return request.CreateErrorResponse(HttpStatusCode.BadRequest, $"This Jekyll comments receiever does not handle forms for '${postedSite}'. You should point to your own instance.");
@@ -64,10 +64,10 @@ namespace JekyllBlogCommentsAzure
         {
             // Create the Octokit client
             var github = new GitHubClient(new ProductHeaderValue("PostCommentToPullRequest"),
-                new Octokit.Internal.InMemoryCredentialStore(new Credentials(ConfigurationManager.AppSettings["GitHubToken"])));
+                new Octokit.Internal.InMemoryCredentialStore(new Credentials(config.GitHubToken)));
 
             // Get a reference to our GitHub repository
-            var repoOwnerName = ConfigurationManager.AppSettings["PullRequestRepository"].Split('/');
+            var repoOwnerName = config.PullRequestRepository.Split('/');
             var repo = await github.Repository.Get(repoOwnerName[0], repoOwnerName[1]);
 
             // Create a new branch from the default branch
@@ -77,7 +77,7 @@ namespace JekyllBlogCommentsAzure
             // Create a new file with the comments in it
             var fileRequest = new CreateFileRequest($"Comment by {comment.name} on {comment.post_id}", new SerializerBuilder().Build().Serialize(comment), newBranch.Ref)
             {
-                Committer = new Committer(comment.name, comment.email ?? ConfigurationManager.AppSettings["CommentFallbackCommitEmail"] ?? "redacted@example.com", comment.date)
+                Committer = new Committer(comment.name, comment.email ?? config.CommentFallbackCommitEmail ?? "redacted@example.com", comment.date)
             };
             await github.Repository.Content.CreateFile(repo.Id, $"_data/comments/{comment.post_id}/{comment.id}.yml", fileRequest);
 
@@ -120,11 +120,11 @@ namespace JekyllBlogCommentsAzure
             comment = errors.Any() ? null : (Comment)constructor.Invoke(values.Values.ToArray());
             var isFormValid = !errors.Any();
 
-            if (isFormValid && !string.IsNullOrEmpty(ConfigurationManager.AppSettings["SentimentAnalysis.SubscriptionKey"]))
+            if (isFormValid && !string.IsNullOrEmpty(config.SentimentAnalysisSubscriptionKey))
             {
-                var textAnalysis = new SentimentAnalysis(ConfigurationManager.AppSettings["SentimentAnalysis.SubscriptionKey"], 
-                    ConfigurationManager.AppSettings["SentimentAnalysis.Region"],
-                    ConfigurationManager.AppSettings["SentimentAlaysis.Lang"]);
+                var textAnalysis = new SentimentAnalysis(config.SentimentAnalysisSubscriptionKey, 
+                    config.SentimentAnalysisRegion,
+                    config.SentimentAnalysisLang);
                 comment.score = textAnalysis.Analyze(comment.message);
             } else {
                 comment.score = "Not configured";
