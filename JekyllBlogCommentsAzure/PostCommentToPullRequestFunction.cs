@@ -7,7 +7,6 @@ using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Threading.Tasks;
-using YamlDotNet.Serialization;
 
 namespace JekyllBlogCommentsAzure
 {
@@ -67,7 +66,7 @@ namespace JekyllBlogCommentsAzure
             var newBranch = await github.Git.Reference.Create(repo.Id, new NewReference($"refs/heads/comment-{comment.id}", defaultBranch.Commit.Sha));
 
             // Create a new file with the comments in it
-            var fileRequest = new CreateFileRequest($"Comment by {comment.name} on {comment.post_id}", new SerializerBuilder().Build().Serialize(comment), newBranch.Ref)
+            var fileRequest = new CreateFileRequest($"Comment by {comment.name} on {comment.post_id}", comment.ToYaml(), newBranch.Ref)
             {
                 Committer = new Committer(comment.name, comment.email ?? ConfigurationManager.AppSettings["CommentFallbackCommitEmail"] ?? "redacted@example.com", comment.date)
             };

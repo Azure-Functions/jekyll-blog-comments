@@ -95,5 +95,10 @@ namespace JekyllBlogCommentsAzure
         public Uri url { get; }
 
         public string message { get; }
+
+        public string ToYaml()
+        {
+            return new SerializerBuilder().Build().Serialize(this);
+        }
     }
 }
