@@ -42,12 +42,13 @@ namespace JekyllBlogCommentsAzure
 
             comment = errors.Any() ? null : (Comment)constructor.Invoke(values.Values.ToArray());
             var isFormValid = !errors.Any();
+            var config = PostCommentToPullRequestFunction.config;
 
-            if (isFormValid && !string.IsNullOrEmpty(ConfigurationManager.AppSettings["SentimentAnalysis.SubscriptionKey"]))
+            if (isFormValid && !string.IsNullOrEmpty(config.SentimentAnalysisSubscriptionKey))
             {
-                var textAnalysis = new SentimentAnalysis(ConfigurationManager.AppSettings["SentimentAnalysis.SubscriptionKey"],
-                    ConfigurationManager.AppSettings["SentimentAnalysis.Region"],
-                    ConfigurationManager.AppSettings["SentimentAlaysis.Lang"]);
+                var textAnalysis = new SentimentAnalysis(config.SentimentAnalysisSubscriptionKey,
+                    config.SentimentAnalysisRegion,
+                    config.SentimentAnalysisLang);
                 comment.score = textAnalysis.Analyze(comment.message);
             }
             else
