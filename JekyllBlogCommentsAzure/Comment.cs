@@ -16,7 +16,7 @@ namespace JekyllBlogCommentsAzure
     {
         struct MissingRequiredValue { } // Placeholder for missing required form values
         static readonly Regex validEmail = new Regex(@"^[^@\s]+@[^@\s]+\.[^@\s]+$"); // Simplest form of email validation
-        static readonly Regex validPathChars = new Regex(@"[^a-zA-Z0-9-]"); // Valid characters when mapping from the blog post slug to a file path
+        static readonly Regex invalidPathChars = new Regex(@"[^a-zA-Z0-9-]"); // Matches invalid characters when mapping from the blog post slug to a file path
 
         /// <summary>
         /// Try to create a Comment from the form.  Each Comment constructor argument will be name-matched
@@ -68,7 +68,7 @@ namespace JekyllBlogCommentsAzure
 
         public Comment(string post_id, string message, string name, string email = null, Uri url = null, string avatar = null)
         {
-            this.post_id = validPathChars.Replace(post_id, "-");
+            this.post_id = invalidPathChars.Replace(post_id, "-");
             this.message = message;
             this.name = name;
             this.email = email;
