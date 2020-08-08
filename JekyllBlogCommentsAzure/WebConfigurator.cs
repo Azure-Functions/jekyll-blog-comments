@@ -10,6 +10,10 @@ namespace JekyllBlogCommentsAzure
 
         public string PullRequestRepository => ConfigurationManager.AppSettings["PullRequestRepository"];
 
+        public string CodeBranch => ConfigurationManager.AppSettings["CodeBranch"];
+
+        public string CommentsFolderLocation => ConfigurationManager.AppSettings["CommentsFolderLocation"];
+
         public string CommentFallbackCommitEmail => ConfigurationManager.AppSettings["CommentFallbackCommitEmail"];
 
         public string SentimentAnalysisSubscriptionKey => ConfigurationManager.AppSettings["SentimentAnalysis.SubscriptionKey"];

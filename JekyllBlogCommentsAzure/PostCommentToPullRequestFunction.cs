@@ -62,19 +62,23 @@ namespace JekyllBlogCommentsAzure
             var repoOwnerName = config.PullRequestRepository.Split('/');
             var repo = await github.Repository.Get(repoOwnerName[0], repoOwnerName[1]);
 
+            string codeBranchName = config.CodeBranch;
+            string commentsFolderLocation = config.CommentsFolderLocation;
+
             // Create a new branch from the default branch
-            var defaultBranch = await github.Repository.Branch.Get(repo.Id, repo.DefaultBranch);
-            var newBranch = await github.Git.Reference.Create(repo.Id, new NewReference($"refs/heads/comment-{comment.id}", defaultBranch.Commit.Sha));
+            // var defaultBranch = await github.Repository.Branch.Get(repo.Id, repo.DefaultBranch);
+            var codeBranch = await github.Repository.Branch.Get(repo.Id, codeBranchName);
+            var newBranch = await github.Git.Reference.Create(repo.Id, new NewReference($"refs/heads/comment-{comment.id}", codeBranch.Commit.Sha));
 
             // Create a new file with the comments in it
             var fileRequest = new CreateFileRequest($"Comment by {comment.name} on {comment.post_id}", comment.ToYaml(), newBranch.Ref)
             {
                 Committer = new Committer(comment.name, comment.email ?? config.CommentFallbackCommitEmail ?? "redacted@example.com", comment.date)
             };
-            await github.Repository.Content.CreateFile(repo.Id, $"_data/comments/{comment.post_id}/{comment.id}.yml", fileRequest);
+            await github.Repository.Content.CreateFile(repo.Id, $"{commentsFolderLocation}/{comment.post_id}/{comment.id}.yml", fileRequest);
 
             // Create a pull request for the new branch and file
-            return await github.Repository.PullRequest.Create(repo.Id, new NewPullRequest(fileRequest.Message, newBranch.Ref, defaultBranch.Name)
+            return await github.Repository.PullRequest.Create(repo.Id, new NewPullRequest(fileRequest.Message, newBranch.Ref, codeBranch.Name)
             {
                 Body = $"avatar: <img src=\"{comment.avatar}\" width=\"64\" height=\"64\" />\n\nScore: {comment.score}\n\n{comment.message}"
             });
