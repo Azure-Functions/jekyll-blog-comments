@@ -20,9 +20,13 @@ namespace JekyllBlogCommentsAzure
 
             // Make sure the site posting the comment is the correct site.
             var allowedSite = config.CommentWebsiteUrl;
-            var postedSite = form["comment-site"];
-            if (!String.IsNullOrWhiteSpace(allowedSite) && !AreSameSites(allowedSite, postedSite))
-                return request.CreateErrorResponse(HttpStatusCode.BadRequest, $"This Jekyll comments receiever does not handle forms for '${postedSite}'. You should point to your own instance.");
+            var postedSite = form["comment-site"];      
+            if (!String.IsNullOrWhiteSpace(allowedSite) {
+                if (String.IsNullOrWhiteSpace(postedSite))
+                    return request.CreateErrorResponse(HttpStatusCode.BadRequest, $"This Jekyll comments receiever is set to only allow specific sites and no 'comment-site' form value as provided.");
+                if (!AreSameSites(allowedSite, postedSite))
+                    return request.CreateErrorResponse(HttpStatusCode.BadRequest, $"This Jekyll comments receiever does not handle forms for '{postedSite}'. You should point to your own instance.");
+            }
 
             if (Comment.TryCreateFromForm(form, out var comment, out var errors))
                 await CreatePullRequest(comment);
