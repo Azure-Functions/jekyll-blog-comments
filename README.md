@@ -24,4 +24,4 @@ To set this up, you'll need to have an [Azure Portal account](https://portal.azu
 | `CommentFallbackCommitEmail` | The email address to use for GitHub commits and PR's if the form does not supply one.
 | `SentimentAnalysis.SubscriptionKey` | Subscription Key for Microsoft Azure Recognition, if you don't want to use, just leave empty.
 | `SentimentAnalysis.Region` | Region for your Subscription key (E.g.: westus)
-| `SentimentAlaysis.Lang` | Language for comment, [find lang code here](https://docs.microsoft.com/en-us/azure/cognitive-services/text-analytics/language-support)
+| `SentimentAnalysis.Lang` | Language for comment, [find lang code here](https://docs.microsoft.com/en-us/azure/cognitive-services/text-analytics/language-support)
